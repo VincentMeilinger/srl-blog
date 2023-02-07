@@ -18,24 +18,146 @@
   </d-front-matter>
 
   <d-title>
-    <h1>Distill Example</h1>
-    <p>An example project using Webpack, Babel, and Svelte. </p>
+    <h1>Constrained Policy Optimization via Bayesian World Models</h1>
+    <p>A short blog on using Bayesian world models for safer reinforcement learning.</p>
   </d-title>
 
   <d-article>
-
+    <h3>Preliminaries</h3>
     <p>
-      Welcome to a Distill example article: meant to get you writing up your research quickly. Let's demo some
-      features:
+      Ever since we have been able to build robots that can sense and interact with 
+      our world, there has been a dream that they will relieve us of everyday 
+      activities such as cooking or cleaning. One of the biggest problems in 
+      achieving this goal is the training of the robot using real world samples.
+      This task is hard for several reasons. First, sampling the real world comes
+      with higher costs, both in terms of time and money. Furthermore, human involvement
+      is often required, even when using simulations of our world for training, to 
+      teach the agent how to behave more naturally.
+      Another big concern is safety. 
+      Let us assume we want to teach a robot how to handle a knive to dice an onion.
+      Here we would like to ensure that <b>only</b> the onion is diced by the robot, and not 
+      only after deployment, but preferably also during training. 
+      Any mishaps in this task could end up harming the robot itself, its environment
+      or even worse, any humans involved.
+    </p>
+    <p>
+      This blog will cover a small project on how training an agent in such scenarios 
+      can be done in a safer manner.
     </p>
 
-    <h4>Hot reloading</h4>
-    <p>Your browser can automatically refresh when your editor saves. This should work by default, and you can disable
-      it in <code>index.js</code>. Sometimes hot reloading isn't fully compatible with all types of code, so you may
-      need to try manually reloading if you're seeing inconsistent behavior.</p>
+    <h4>Seminar Project</h4>
+    <p>
+      As a part of the safe reinforcement learning seminar, we will modify the LAMBDA training procedure. We introduce Bayesian optimization to optimize agents hyperparameters. This fits in perfectly with the focus of the paper on reducing the number of iterations needed to optimize the agent.
+      Since 
+    </p>
 
-    <h4>Inlined SVGs</h4>
-    <p>SVGs are so small that it can be nice to save an extra request and simply inline them intop your HTML:</p>
+    <h3>Background</h3>
+    <p>
+      In this the project, we use model based reinfocement learning (RL) to train an agent that solves tasks in a given virtual environment. As a starting point, we use the lambda agent proposed in a recent paper by Yarden As. In this paper, the author uses a Bayesian world model to increase safety during training. The environment is modeled by a constrained Markov decision process (CMDP), which is a markov decision process that introduces safety constraints using an additional cost function. Furthermore, the agent is comprised of an actor and a critic model, that 
+    </p>
+
+    <h4>Bayesian Optimization</h4>
+    <p>
+        Bayesian optimization (BO) is a sequential optimization technique, which is especially present in areas where we do not have any prior information about the function that is to be optimized. For this reason, it is often used in areas like robotics, environmental monitoring or reinfocement learning. What differentiates BO from more conventional optimization algorithms (e.g. gradient descent) is that it is model based. This means that BO uses Bayesian inference to construct a surrogate of the <b>objective function</b> to optimize.
+        
+        The algorithm itself can be divided into two main parts. First, a probabilistic model of the objective function is created, based on prior expert knowledge of the functions behaviour, and additionally all prior function observations in case there are any. Thereafter, a sampling policy, also referred to as the <b>acquisition function</b>, uses the information provided by the probabilistic model to propose a new sampling location, which in the best case maximizes the improvement over the previous best objective function sample. A list of all previous samples is maintained, to which the new observation is added. The optimization procedure now restarts from step one, but the sample list including the latest candidate can now be included in the prior function knowledge.
+
+        At first glance, the connection to ML hyperparameter tuning might not be apparent, since using a probabilistic model to model a (in theory) deterministic function of hyperparameters seems impractical. But as stated previously, the objective function we want to optimize is for the most part unknown to us. We are certain about how the function looks at observed locations, but for areas further away from these points the uncertainty grows steadily. Exploring areas of highest uncertainty provides us with the largest amount of information gain about the objective function. A probabilistic model of the function does not only give us an approximation of the true value at any given input, but also how certain it is in its prediction, based on all previous function evaluations. The acquisition function can make use of the uncertainty estimate to more efficiently explore the function space. As a result, we can find function optima using only a small amount of function samples. This is one of the main reasons why BO has gained popularity in the field of hyperparameter tuning in recent years.
+    </p>
+    <p>
+        In this seminar project, the <a href="#expected_improvement"><b>expected improvement</b> (EI)</a> acquisition function is used as sampling policy. In the next section, we will go into further detail about the definition of said policy.
+        Furthermore, we use a Gaussian process as our probabilistic model. You can find more in-depth
+        information about the <b>Gaussian process</b> (GP) <a href="#gaussian_process">in this section</a>.
+    </p>
+
+    <h4 id="expected_improvement">The Expected Improvement Acquisition Function</h4>
+    <p>
+      We will start with a formal definition of acquisition functions. In the hyperparameter optimization context, many sampling policies are based on the concept of maximizing the probability of an arbitrary point $\bold{x}$ of the black box function $f$ improving upon the value $f(\bold{x})$ of the previous best point $\bold{x}^+$.
+      <d-math block="">
+        \max  P(f(\bold{x})) \geq f(\bold{x^+}) + \epsilon_n)
+      </d-math>
+      By varying the parameter $\epsilon_n$, we can control the trade off between exporation and exploitation. The bold variable $\bold{x}$ denotes that $\bold{x}$ is a vector of hyperparameters.
+    </p>
+    <p>
+      The expected improvement acquisition function we use in our optimization procedure is defined as follows.
+      <d-math block="">
+        EI(\bold{x}) = (\mu(\bold{x}) - f(\bold{x^+}) - \xi) \Phi(Z) + \sigma \phi(Z)
+      </d-math>
+      where $\phi$ denotes the normal probability density function and $\Phi$ the normal cumulative density function, with
+      <d-math block="">
+        Z = \left( \frac{\mu(\bold{x}) - f(\bold{x^+}) - \xi}{\sigma(\bold{x})} \right).
+      </d-math>
+      $\xi$ here fullfills the same role as $\epsilon_n$ previously.
+    </p>
+
+    <h4 id="gaussian_process">The Gaussian Process</h4>
+    <p>
+
+    </p>
+    
+    <h3>Implementation</h3>
+    <p>
+      The BO algorithm is implemented in an offline fashion. In each iteration, the agent is retrained using the new parameters as chosen by the acquisition function. For this project, we chose to optimize the two hyperparameters <i>lambda_</i> and <i>discount</i>.
+    </p>
+    <h4>The Algorithm</h4>
+    <d-code block="" language="python">
+      # Pseudo code implementation of the BO Procedure
+
+      # Number of BO iterations
+      n_iterations = 100
+
+      # Lists of hyperparameters to optimize and their respective bounds
+      hyperparameters = [...]  
+      bounds = [...]  
+
+      # To avoid a cold start, it is common to start out with a small number of samples
+      samples_x = [...]  # = Hyperparameters
+      samples_y = [...]  # = Agent scores
+
+      for i in range(n_iterations):
+        # Feed the GP with all previous objective function samples
+        gp = GaussianProcess(samples_x, samples_y)  
+
+        # Define acquisition function
+        ei = ExpectedImprovement(gp, samples_y.min())  
+        # Optimize EI, retrieve optimal next sampling location (= hyperparameters)
+        new_sample_candidate = optimize_acquisition_function(ei, bounds)  
+
+        agent = LAMBDA()
+        # Train the agent with the new set of hyperparameters
+        trained_agent = train(agent, hyperparameters)
+        # Evaluate the agent to get the agents score
+        new_sample_value = evaluate(trained_agent)
+
+        # Add the new samples to the list of all samples
+        samples_x.append(new_sample_candidate)
+        sampley_y.append(new_sample_value)
+    </d-code>
+
+    <h4>Experiment Setup</h4>
+    <p>
+      To demonstrate the optimization process of the LAMBDA-agent, we will optimize the two hyperparameters <code>lambda_</code> ($\lambda$) and <code>discount</code> ($d$). These parameters can be found in the actor, the critic and the safety-critic models of the agent and therefore have a significant impact on the agents performance.
+    </p>
+
+    <h4>Results</h4>
+    <p>
+      
+      In the following interactive figure you can click through the gaussian process mean after each consecutive sample.
+    </p>
+    <d-figure id="svelte-mean-dfigure">
+      <figure>
+        <div id="svelte-mean-target"></div>
+        <figcaption>The Gaussian process mean, after one to twenty-four samples of the objective function $f(\lambda, d)$. White markers denote already observed objective function samples, the red marker the pending sampling location. A higher function value results in brighter (yellow) color, a lower function value in darker (blue) color. Use the buttons to see how the mean more and more adapts to the ground truth.</figcaption>
+      </figure>
+    </d-figure>
+    <p>
+      We not that in this example 
+    </p>
+    
+
+
+
+
 
     <figure>
       <%= require("../static/diagrams/diffparam.svg") %>
@@ -287,13 +409,7 @@
       figures only when readers scroll close to them. The code for this is in <code>src/index.js</code>.
     </p>
 
-    <d-figure id="svelte-example-dfigure">
-      <figure>
-        <div id="svelte-example-target"></div>
-        <figcaption>And a static figcaption. You can use citations<d-cite key="mercier2011humans"></d-cite> in this
-          figcaption, but not in text added by javascript.</figcaption>
-      </figure>
-    </d-figure>
+    
 
     <p>You can't use citation tags (<code>d-cite</code>) in figures that are dynamically loaded using Javascript.
       Distill statically
