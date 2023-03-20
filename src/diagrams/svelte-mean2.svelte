@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   let count = 1;
-  let images = ["mean0", "mean1", "mean2", "mean3", "mean4", "mean5", "mean6", "mean7", "mean8", "mean9", "mean10", "mean11", "mean12", "mean13", "mean14", "mean15", "mean16", "mean17", "mean18", "mean19", "mean20", "mean21", "mean22", "mean23"];
+  let images = ["mean0", "mean1", "mean2", "mean3", "mean4", "mean5", "mean6", "mean7", "mean8", "mean9", "mean10", "mean11", "mean12", "mean13", "mean14", "mean15", "mean16", "mean17", "mean18", "mean19", "mean20", "mean21"];
 
   // the `$:` means 're-run whenever these values change'
   onMount(() => document.getElementById(images[0]).classList.toggle('hidden'));
@@ -27,7 +27,7 @@
   }
 
   function get_next() {
-    if(count >= 24) {
+    if(count >= 22) {
       return 1;
     }
     return count + 1;
@@ -35,7 +35,7 @@
 
   function get_prev() {
     if(count <= 1) {
-      return 24;
+      return 22;
     }
     return count - 1;
   }
@@ -73,7 +73,7 @@
 
 <div class="container">
   {#each images as image (image)}
-    <img src={"/plots/" + image + ".png"} alt={image + ".png"} id={image} class="hidden mean" />
+    <img src={"/plots2/" + image + ".png"} alt={image + ".png"} id={image} class="hidden mean" />
   {/each}
 </div>
 <div style="width: 70%;margin: 0% 15% 5% 15%;">

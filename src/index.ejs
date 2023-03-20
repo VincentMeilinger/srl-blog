@@ -18,42 +18,27 @@
   </d-front-matter>
 
   <d-title>
-    <h1>Constrained Policy Optimization via Bayesian World Models</h1>
-    <p>A short blog on using Bayesian world models for safer reinforcement learning.</p>
+    <h1>Bayesian methods in RL</h1>
+    <p>A short blog on using Bayesian methods to enable safer reinforcement learning.</p>
   </d-title>
 
   <d-article>
     <h3>Preliminaries</h3>
     <p>
-      Ever since we have been able to build robots that can sense and interact with 
-      our world, there has been a dream that they will relieve us of everyday 
-      activities such as cooking or cleaning. One of the biggest problems in 
-      achieving this goal is the training of the robot using real world samples.
-      This task is hard for several reasons. First, sampling the real world comes
-      with higher costs, both in terms of time and money. Furthermore, human involvement
-      is often required, even when using simulations of our world for training, to 
-      teach the agent how to behave more naturally.
-      Another big concern is safety. 
-      Let us assume we want to teach a robot how to handle a knive to dice an onion.
-      Here we would like to ensure that <b>only</b> the onion is diced by the robot, and not 
-      only after deployment, but preferably also during training. 
-      Any mishaps in this task could end up harming the robot itself, its environment
-      or even worse, any humans involved.
-    </p>
-    <p>
-      This blog will cover a small project on how training an agent in such scenarios 
+      Reinforcement learning (RL) is a powerful approach to train an actor to deal with complex and dynamic environments. However, RL algorithms require a lot of data to learn effective policies, which can limit their practical applications in real-world scenarios. Gathering data can be time-consuming and expensive. Additionally, data collection can sometimes even be dangerous, especially in environments that involve physical robots or complex simulators. An example for this is the training of self-driving cars on public roads. When autonomous vehicles share the roads with human drivers to collect data, a simple mistake by the agent could lead to a dangerous incident. 
+      Therefore, there is a growing demand for RL methods that can learn from as few samples as possible while maintaining high performance. This blog will cover a small project on how training an agent in such scenarios 
       can be done in a safer manner.
     </p>
 
-    <h4>Seminar Project</h4>
+    <h4>The Project</h4>
     <p>
-      As a part of the safe reinforcement learning seminar, we will modify the LAMBDA training procedure. We introduce Bayesian optimization to optimize agents hyperparameters. This fits in perfectly with the focus of the paper on reducing the number of iterations needed to optimize the agent.
-      Since 
+      The experiments performed use the LAMBDA agent by Yarden As et al. <d-cite key="yardenas_lambda"></d-cite>. LAMBDA is a model based agent, and the author's focus is - among other safety related topics -, on sampling efficiency, to increase training safety <d-cite key="yardenas_lambda"></d-cite>. Further going down this route, I will introduce a hyperparameter training procedure to LAMBDA. In the paper appendix, the authors mention possible performance improvements when further fine-tuning LAMBDA's hyperparameters. Since LAMBDA already uses a Bayesian world model to create a surrogate world to draw samples from, the hyperparameter optimization approach will also be bayesian. This fits in perfectly with the focus of the paper on reducing the number of iterations needed to optimize the agent.
     </p>
 
     <h3>Background</h3>
+    <h4>LAMBDA</h4>
     <p>
-      In this the project, we use model based reinfocement learning (RL) to train an agent that solves tasks in a given virtual environment. As a starting point, we use the lambda agent proposed in a recent paper by Yarden As. In this paper, the author uses a Bayesian world model to increase safety during training. The environment is modeled by a constrained Markov decision process (CMDP), which is a markov decision process that introduces safety constraints using an additional cost function. Furthermore, the agent is comprised of an actor and a critic model, that 
+      LAMBDA is a Bayesian world model based reinfocement learning (RL) agent, that solves tasks in a given virtual environment. The agent can be benchmarked using a suite of safety gym environments. The environment can be modeled as a constrained Markov decision process (CMDP), which can be navigated using learned policies <d-cite key="yardenas_lambda"></d-cite>. The reward and cost value functions are modeled using actor, critic and a safety critic neural networks <d-cite key="yardenas_lambda"></d-cite>. To increase safety during training and testing, the authors use a Bayesian world model. More specifically, the world model is based on a Recurrent State Space Model (RSSM) <d-cite key="yardenas_lambda"></d-cite>. The posterior distribution is obtained using approximations of Bayesian inference (Stochastic Weight Averaging-Gaussian (SWAG) approximation), since exact Bayesian inference is infeasible. This approach allows the authors to draw a set of statistically plausible transition distributions from the world model <d-cite key="yardenas_lambda"></d-cite>. These distributions are used to guide the exploration and exploitation of the agent.
     </p>
 
     <h4>Bayesian Optimization</h4>
@@ -62,21 +47,20 @@
         
         The algorithm itself can be divided into two main parts. First, a probabilistic model of the objective function is created, based on prior expert knowledge of the functions behaviour, and additionally all prior function observations in case there are any. Thereafter, a sampling policy, also referred to as the <b>acquisition function</b>, uses the information provided by the probabilistic model to propose a new sampling location, which in the best case maximizes the improvement over the previous best objective function sample. A list of all previous samples is maintained, to which the new observation is added. The optimization procedure now restarts from step one, but the sample list including the latest candidate can now be included in the prior function knowledge.
 
-        At first glance, the connection to ML hyperparameter tuning might not be apparent, since using a probabilistic model to model a (in theory) deterministic function of hyperparameters seems impractical. But as stated previously, the objective function we want to optimize is for the most part unknown to us. We are certain about how the function looks at observed locations, but for areas further away from these points the uncertainty grows steadily. Exploring areas of highest uncertainty provides us with the largest amount of information gain about the objective function. A probabilistic model of the function does not only give us an approximation of the true value at any given input, but also how certain it is in its prediction, based on all previous function evaluations. The acquisition function can make use of the uncertainty estimate to more efficiently explore the function space. As a result, we can find function optima using only a small amount of function samples. This is one of the main reasons why BO has gained popularity in the field of hyperparameter tuning in recent years.
+        A big advantage of model based optimization methods is the use of a surrogate function. A probabilistic model of the function does not only give us an approximation of the true value at any given input, but also how certain it is in its prediction, based on all previous function evaluations. Exploring areas of high uncertainty provides us with the largest amount of information gain about the objective function. The acquisition function can make use of the uncertainty estimate to more efficiently explore the function space. As a result, we can find function optima fast, using only a small amount of function samples. This is one of the main reasons why BO has gained popularity in the field of hyperparameter tuning in recent years.
     </p>
     <p>
-        In this seminar project, the <a href="#expected_improvement"><b>expected improvement</b> (EI)</a> acquisition function is used as sampling policy. In the next section, we will go into further detail about the definition of said policy.
-        Furthermore, we use a Gaussian process as our probabilistic model. You can find more in-depth
-        information about the <b>Gaussian process</b> (GP) <a href="#gaussian_process">in this section</a>.
+        In this seminar project, the <a href="#expected_improvement"><b>expected improvement</b> (EI)</a> acquisition function is used as a sampling policy. In the next section, I will go into further detail about the definition of said policy.
+        Furthermore, a Gaussian process is used as a probabilistic model. You can find more in-depth information about <b>Gaussian processes</b> (GP) in the section thereafter (<a href="#gaussian_process">here</a>).
     </p>
 
     <h4 id="expected_improvement">The Expected Improvement Acquisition Function</h4>
     <p>
-      We will start with a formal definition of acquisition functions. In the hyperparameter optimization context, many sampling policies are based on the concept of maximizing the probability of an arbitrary point $\bold{x}$ of the black box function $f$ improving upon the value $f(\bold{x})$ of the previous best point $\bold{x}^+$.
+      In the hyperparameter optimization context, many sampling policies are based on the concept of maximizing the probability of an arbitrary point $\bold{x}$ of the black box function $f$ improving upon the value $f(\bold{x})$ of the previous best point $\bold{x}^+$.
       <d-math block="">
         \max  P(f(\bold{x})) \geq f(\bold{x^+}) + \epsilon_n)
       </d-math>
-      By varying the parameter $\epsilon_n$, we can control the trade off between exporation and exploitation. The bold variable $\bold{x}$ denotes that $\bold{x}$ is a vector of hyperparameters.
+      By varying the parameter $\epsilon_n$, we can control the trade off between exporation and exploitation. It is common to adjust $\epsilon_n$ during the optimization process, such that we ideally explore the function space in the beginning, before exploiting the gained knowledge to find the function optimum. The bold variable $\bold{x}$ denotes that $\bold{x}$ is a vector of hyperparameters.
     </p>
     <p>
       The expected improvement acquisition function we use in our optimization procedure is defined as follows.
@@ -92,19 +76,22 @@
 
     <h4 id="gaussian_process">The Gaussian Process</h4>
     <p>
-
+      A Gaussian process is a collection of infinitely many random variables, where all variables of any finite subset have a joint Gaussian distribution. More intuitively, it can be seen as a distribution over continuous functions. This concept is commonly used to model non-linear relationships between noisy samples. If we want to find an optimum of an unknown function, we can probe the function at certain input locations and record the received observations. We can use a GP to fit a collection of possible functions to the collected data points. The benefit of using a GP in such situations is that it allows us to analytically derive the mean function and the covariances of the measured values. While the mean effectively provides us with an approximation of the objective, the covariances can be seen as a measure of uncertainty in the estimation at any point in function space.
+    </p>
+    <p>
+      While analytically deriving the mean and variances of a GP is certainly viable for smaller use cases, the performace scales quite poorly. For this reason, oftentimes stochastical approximation methods are used to approximate GPs, similarly to the SWAG algorithm used for LAMBDA <d-cite key="yardenas_lambda"></d-cite>. For this project, the simpler analytical solution provided by the <code>BoTorch</code>-library is sufficient.
     </p>
     
     <h3>Implementation</h3>
     <p>
-      The BO algorithm is implemented in an offline fashion. In each iteration, the agent is retrained using the new parameters as chosen by the acquisition function. For this project, we chose to optimize the two hyperparameters <i>lambda_</i> and <i>discount</i>.
+      The BO algorithm is implemented in an offline fashion. In each iteration, the agent is retrained using the new parameters as chosen by the acquisition function. For this project, I chose to optimize the two hyperparameters <code>lambda_</code> and <code>discount</code>.
     </p>
     <h4>The Algorithm</h4>
     <d-code block="" language="python">
       # Pseudo code implementation of the BO Procedure
 
       # Number of BO iterations
-      n_iterations = 100
+      n_iterations = 24
 
       # Lists of hyperparameters to optimize and their respective bounds
       hyperparameters = [...]  
@@ -120,330 +107,49 @@
 
         # Define acquisition function
         ei = ExpectedImprovement(gp, samples_y.min())  
-        # Optimize EI, retrieve optimal next sampling location (= hyperparameters)
-        new_sample_candidate = optimize_acquisition_function(ei, bounds)  
+        # Optimize EI, retrieve optimal next sampling location (next set of hyperparameters)
+        x_new = optimize_acquisition_function(ei, bounds)  
 
         agent = LAMBDA()
         # Train the agent with the new set of hyperparameters
-        trained_agent = train(agent, hyperparameters)
+        trained_agent = train(agent, x_new) # x_new: set of new hyperparameters
         # Evaluate the agent to get the agents score
-        new_sample_value = evaluate(trained_agent)
+        y_new = evaluate(trained_agent)
 
         # Add the new samples to the list of all samples
-        samples_x.append(new_sample_candidate)
-        sampley_y.append(new_sample_value)
+        samples_x.append(x_new)
+        sampley_y.append(y_new)
     </d-code>
 
     <h4>Experiment Setup</h4>
     <p>
-      To demonstrate the optimization process of the LAMBDA-agent, we will optimize the two hyperparameters <code>lambda_</code> ($\lambda$) and <code>discount</code> ($d$). These parameters can be found in the actor, the critic and the safety-critic models of the agent and therefore have a significant impact on the agents performance.
+      To demonstrate the optimization process of the LAMBDA-agent, we will optimize the two hyperparameters <code>lambda_</code> ($\lambda$) and <code>discount</code> ($d$). These parameters can be found in the critic model of the agent and therefore could have a significant impact on the agents performance. The performance metrics used here are the <i>average undiscounted episodic reward return</i> $\hat{J}(\pi)$, the <i>average undiscounted episodic cost return</i> $\hat{J}_c(\pi)$, and the <i>normalized sum of costs during training</i> (or <i>cost regret</i>) $\rho_c(\pi)$, as defined in <d-cite key="yardenas_lambda"></d-cite>.  
     </p>
 
-    <h4>Results</h4>
+    <h4>First Results</h4>
     <p>
-      
+      For the first test run, I defined the objective function to optimize as $\hat{J}_c(\pi) + \rho_c(\pi)$. Minimizing this function minimizes the cost return of the agent, during training and testing. The reward is ignored for now.
       In the following interactive figure you can click through the gaussian process mean after each consecutive sample.
     </p>
-    <d-figure id="svelte-mean-dfigure">
+    <d-figure id="svelte-mean1-dfigure">
       <figure>
-        <div id="svelte-mean-target"></div>
+        <div id="svelte-mean1-target"></div>
         <figcaption>The Gaussian process mean, after one to twenty-four samples of the objective function $f(\lambda, d)$. White markers denote already observed objective function samples, the red marker the pending sampling location. A higher function value results in brighter (yellow) color, a lower function value in darker (blue) color. Use the buttons to see how the mean more and more adapts to the ground truth.</figcaption>
-      </figure>
+      </figure> 
     </d-figure>
     <p>
-      We not that in this example 
+      We can see that in this example, the minimum of the objective function is found relatively quickly, only after taking a few samples. Let us now take a look at the performance of the agent trained on the best found hyperparameters. The following plot shows the average reward return, average cost return and the cost regret. While the average cost return is decreasing with more training steps, as expected, the cost regret is actually rising. The reason why this is happening could be the small magnitude of the measurement when compared to the average cost return. Since it is useful to incorporate the average reward return in the optimization procedure as well, we need a better objective function.
     </p>
-    
-
-
-
-
-
-    <figure>
-      <%= require("../static/diagrams/diffparam.svg") %>
-    </figure>
-
-    <style>
-      #arrow-2 #arrow-head {
-        fill: steelblue;
-      }
-
-      #arrow-2 #arrow-line {
-        stroke: steelblue;
-      }
-    </style>
-
-    <p>Let's use some CSS to style an inlined SVG. Here's an arrow
-      <svg width="27px" height="9px" viewBox="0 0 27 9" version="1.1" xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink">
-        <g id="arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-          <g id="Group" transform="translate(-0.195652, 0.0)">
-            <path d="M10.5,4.5 L26.8913043,4.5" id="arrow-line" stroke="#FF6600" stroke-width="2"
-              stroke-linecap="square" stroke-dasharray="6,4"></path>
-            <g id="arrow-head" transform="translate(5.0, 4.5) scale(-1, 1) translate(-5.0, -4.5) translate(0.5, 0.0)"
-              fill="#FF6600" fill-rule="nonzero">
-              <path
-                d="M4.5,0 C5.67007294,3.25202425 6.85281213,6.29180565 9,9 L4.5,7.3125 L0,9 C2.13530145,6.28972675 3.34126793,3.24998975 4.5,0 Z"
-                id="Shape" transform="translate(4.5, 4.5) rotate(-270.0) translate(-4.5, -4.5) "></path>
-            </g>
-          </g>
-        </g>
-      </svg> that we
-      can make
-      inline. If you'd like to change the color in CSS, we can do so. Let's put the second arrow (<span
-        id="arrow-2"><svg width="27px" height="9px" viewBox="0 0 27 9" version="1.1" xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink">
-          <g id="arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-            <g id="Group" transform="translate(-0.195652, 0.0)">
-              <path d="M10.5,4.5 L26.8913043,4.5" id="arrow-line" stroke="#FF6600" stroke-width="2"
-                stroke-linecap="square" stroke-dasharray="6,4"></path>
-              <g id="arrow-head" transform="translate(5.0, 4.5) scale(-1, 1) translate(-5.0, -4.5) translate(0.5, 0.0)"
-                fill="#FF6600" fill-rule="nonzero">
-                <path
-                  d="M4.5,0 C5.67007294,3.25202425 6.85281213,6.29180565 9,9 L4.5,7.3125 L0,9 C2.13530145,6.28972675 3.34126793,3.24998975 4.5,0 Z"
-                  id="Shape" transform="translate(4.5, 4.5) rotate(-270.0) translate(-4.5, -4.5) "></path>
-              </g>
-            </g>
-          </g>
-        </svg></span>) in a tag with an ID, so we can
-      target it in CSS.
-
-      <d-code block="" language="css">
-        #arrow-2 #arrow-head {
-        fill: steelblue;
-        }
-
-        #arrow-2 #arrow-line {
-        stroke: steelblue;
-        }
-      </d-code>
-
-    </p>
-
-    <h4>Formulas</h4>
-
-    <p>Here's a test of an inline equation <d-math>c = a^2 + b^2</d-math>. Can also be used with configurable katex
-      settings, for example by
-      using inline <code>$</code> signs: <d-math>x^2</d-math>. There are also block equations:</p>
-    <d-math block="">
-      c = \pm \sqrt{ \sum_{i=0}^{n}{a^{222} + b^2}}
-    </d-math>
-    <p>Math can also be quite involved:</p>
-    <d-math block="">
-      \frac{1}{\Bigl(\sqrt{\phi \sqrt{5}}-\phi\Bigr) e^{\frac25 \pi}} = 1+\frac{e^{-2\pi}} {1+\frac{e^{-4\pi}}
-      {1+\frac{e^{-6\pi}} {1+\frac{e^{-8\pi}} {1+\cdots} } } }
-    </d-math>
-
-    <p>We've also been experimenting with <a
-        href="https://github.com/distillpub/template/wiki/Annotated-Formulas">annotated formulas</a>:</p>
-
-    <style>
-      .eq-grid {
-        display: grid;
-        justify-content: start;
-        grid-row-gap: 10px;
-      }
-
-      .eq-grid figcaption d-math {
-        font-size: 100%;
-      }
-
-      .eq-grid .expansion-marker {
-        border: 1px solid #CCC;
-        border-bottom: none;
-        height: .5em;
-        width: 100%;
-      }
-    </style>
-
-    <figure class="eq-grid">
-
-      <div style="grid-row: 1; grid-column: 1;">
-        <d-math> C ~~~=~~~~ </d-math>
-      </div>
-      <div style="grid-row: 1; grid-column: 2;">
-        <d-math> H^E_D(X, Z) </d-math>
-      </div>
-      <div style="grid-row: 1; grid-column: 3;">
-        <d-math> ~~~-~~~ </d-math>
-      </div>
-      <div style="grid-row: 1; grid-column: 4;">
-        <d-math> H^E_E(X, Z) </d-math>
-      </div>
-
-
-      <div class="expansion-marker" style="grid-row: 2; grid-column: 4 / 7; "></div>
-
-      <div style="grid-row: 3; grid-column: 1;">
-        <d-math> ~~~~~~~=~~~~ </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 2;">
-        <d-math> H^E_D(X, Z) </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 3;">
-        <d-math> ~~~-~~~ </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 4;">
-        <d-math> H^E_E(Z | X) </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 5;">
-        <d-math> ~~~-~~~ </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 6;">
-        <d-math> H^E_E(X) </d-math>
-      </div>
-
-      <figcaption style="grid-row: 4; grid-column: 4; max-width:135px;">
-        Bits to represent <d-math>z</d-math><br> if you already know <d-math>x</d-math>.
-      </figcaption>
-      <figcaption style="grid-row: 4; grid-column: 6; max-width:120px;">
-        Bits to represent<br>
-        <d-math>x</d-math> by itself.
-      </figcaption>
-
-    </figure>
-
-    <h4>Citations</h4>
-
-    <p>We can<d-cite key="mercier2011humans"></d-cite> also cite <d-cite
-        key="gregor2015draw,mercier2011humans,openai2018charter"></d-cite> external publications. <d-cite
-        key="dong2014image,dumoulin2016guide,mordvintsev2015inceptionism"></d-cite>. We should also be testing
-      footnotes
-      <d-footnote id="d-footnote-1">This will become a hoverable footnote. This will become a hoverable footnote. This
-        will become a
-        hoverable footnote. This will become a hoverable footnote. This will become a hoverable footnote. This will
-        become a hoverable footnote. This will become a hoverable footnote. This will become a hoverable footnote.
-      </d-footnote>. There are multiple footnotes, and they appear in the appendix<d-footnote id="d-footnote-2">Given I
-        have coded them
-        right. Also, here's math in a footnote: <d-math>c = \sum_0^i{x}</d-math>. Also, a citation. Box-ception<d-cite
-          key="gregor2015draw"></d-cite>!</d-footnote> as well.</p>
-
-
-    <h4>Displaying code</h4>
-    <p>Some inline javascript:<d-code language="javascript">var x = 25;</d-code>. And here's a javascript code block.
-    </p>
-
-    <d-code block="" language="javascript">
-      var x = 25;
-      function(x){
-      return x * x;
-      }
-    </d-code>
-    <p>We also support some highlighting.</p>
-    <d-code block="" language="python">
-      # Python 3: Fibonacci series up to n
-      def fib(n):
-      a, b = 0, 1
-      while a &lt; n: print(a, end=' ' ) a, b=b, a+b </d-code>
-
-    <h4>Tables</h4>
-    <p>We have simple tables that try to stay readable at most screen sizes:
-    </p>
-
-    <style>
-      #example-table {
-        overflow-x: scroll;
-      }
-
-      #example-table th {
-        white-space: nowrap;
-      }
-
-      #example-table tbody th {
-        font-weight: initial;
-        border-bottom: 1px solid rgb(242, 242, 242);
-      }
-
-      #example-table tbody tr:last-of-type th {
-        border-bottom: inherit;
-      }
-
-      #example-table td,
-      #example-table thead th {
-        text-align: center;
-      }
-
-      #example-table td {
-        border-color: rgb(242, 242, 242);
-      }
-
-      #example-table td.no {
-        background-color: #f6f6f6;
-      }
-    </style>
-    <table id="example-table">
-      <thead>
-        <tr>
-          <th></th>
-          <th scope="col">Parallel</th>
-          <th scope="col">Efficient</th>
-          <th scope="col">Reversible</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th scope="row">GANs</th>
-          <td>Yes</td>
-          <td>Yes</td>
-          <td class="no">No</td>
-        </tr>
-        <tr>
-          <th scope="row">Flow Models</th>
-          <td>Yes</td>
-          <td class="no">No</td>
-          <td>Yes</td>
-        </tr>
-        <tr>
-          <th scope="row">Autoregressive Models</th>
-          <td class="no">No</td>
-          <td>Yes</td>
-          <td>Yes</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <h4>Interactive Figures</h4>
-
+    <h4>Second attempt Results</h4>
     <p>
-      Here's a dynamically instantiated "figure". We use Intersection Observers to allow loading resource-heavy
-      figures only when readers scroll close to them. The code for this is in <code>src/index.js</code>.
+      We will now alter the objective function to include the average undiscounted episodic reward return, and futhermore to try to balance out the differences in magnitude by multiplying the cost regret with a constant factor. The latter will hopefully minimize the cost during training. We obtain $\hat{J}(\pi) + \hat{J}_c(\pi) + 100 \cdot \rho_c(\pi)$.
     </p>
-
-    
-
-    <p>You can't use citation tags (<code>d-cite</code>) in figures that are dynamically loaded using Javascript.
-      Distill statically
-      analyzes your submission for its citations, because they need to be uploaded to indexers and organizations like <a
-        href="https://www.crossref.org/">CrossRef</a> and <a href="https://scholar.google.com">Google Scholar</a>.</p>
-
-    <p>That's it for the example article! Feel free to look at <a
-        href="https://github.com/distillpub?utf8=%E2%9C%93&q=post--&type=public">implementations
-        of existing Distill articles</a>, or ask for help in
-      the <a href="http://slack.distill.pub">Distill Slack Community</a>.</p>
-
-  </d-article>
-
-
-
-  <d-appendix>
-    <h3>Acknowledgments</h3>
-    <p>
-      We are deeply grateful to...
-    </p>
-
-    <p>
-      Many of our diagrams are based on...
-    </p>
-
-    <h3>Author Contributions</h3>
-    <p>
-      <b>Research:</b> Alex developed ...
-    </p>
-
-    <p>
-      <b>Writing & Diagrams:</b> The text was initially drafted by...
-    </p>
-
+    <d-figure id="svelte-mean2-dfigure">
+      <figure>
+        <div id="svelte-mean2-target"></div>
+        <figcaption>The Gaussian process mean, after one to twenty-four samples of the objective function $f(\lambda, d)$. White markers denote already observed objective function samples, the red marker the pending sampling location. A higher function value results in brighter (yellow) color, a lower function value in darker (blue) color. Use the buttons to see how the mean more and more adapts to the ground truth.</figcaption>
+      </figure> 
+    </d-figure>
 
     <d-footnote-list></d-footnote-list>
     <d-citation-list></d-citation-list>
