@@ -2,28 +2,28 @@
   import { onMount } from 'svelte';
   let count = 1;
   let images = ["mean0", "mean1", "mean2", "mean3", "mean4", "mean5", "mean6", "mean7", "mean8", "mean9", "mean10", "mean11", "mean12", "mean13", "mean14", "mean15", "mean16", "mean17", "mean18", "mean19", "mean20", "mean21"];
-
+  console.log("RUNS")
   // the `$:` means 're-run whenever these values change'
-  onMount(() => document.getElementById(images[0]).classList.toggle('hidden'));
+  onMount(() => document.getElementById(images[0] + "-2").classList.toggle('hidden'));
   
   function next_sample() {
-    document.getElementById(images[count-1]).classList.toggle('hidden');
+    document.getElementById(images[count-1] + "-2").classList.toggle('hidden');
     count = get_next();
-    document.getElementById(images[count-1]).classList.toggle('hidden');
+    document.getElementById(images[count-1] + "-2").classList.toggle('hidden');
   }
 
   function prev_sample() {
-    document.getElementById(images[count-1]).classList.toggle('hidden');
+    document.getElementById(images[count-1] + "-2").classList.toggle('hidden');
     count = get_prev();
-    document.getElementById(images[count-1]).classList.toggle('hidden');
+    document.getElementById(images[count-1] + "-2").classList.toggle('hidden');
   }
 
   function reset() {
     for(var i=0; i<images.length; i++) {
-      document.getElementById(images[i]).classList.add('hidden');
+      document.getElementById(images[i] + "-2").classList.add('hidden');
     }
     count = 1;
-    document.getElementById(images[count-1]).classList.toggle('hidden');
+    document.getElementById(images[count-1] + "-2").classList.toggle('hidden');
   }
 
   function get_next() {
@@ -73,7 +73,7 @@
 
 <div class="container">
   {#each images as image (image)}
-    <img src={"/plots2/" + image + ".png"} alt={image + ".png"} id={image} class="hidden mean" />
+    <img src={"/plots2/" + image + ".png"} alt={image + ".png"} id={image + "-2"} class="hidden mean" />
   {/each}
 </div>
 <div style="width: 70%;margin: 0% 15% 5% 15%;">
